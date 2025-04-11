@@ -157,7 +157,7 @@ def get_session_info(session_id):
         logger.error(f"Error retrieving session info: {e}")
         return jsonify({'error': str(e)}), 500
 
-@api_bp.route('/api/webrtc', methods=['POST'])
+@api_bp.route('/webrtc', methods=['POST'])
 def process_webrtc():
     """
     API endpoint to process audio from WebRTC
