@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demo - Speech Diarization API</title>
+    <link rel="stylesheet" href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css">
+    <link rel="stylesheet" href="/static/css/custom.css">
+    <script src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/feather-icons/4.28.0/feather.min.js"></script>
+    <script src="/static/js/recorder.js"></script>
+    <script src="/static/js/react-component.js"></script>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i data-feather="mic"></i> Speech Diarizer
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/demo">Demo</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/docs">API Docs</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="https://github.com" target="_blank">GitHub</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="container py-5">
+        <div class="row">
+            <div class="col-lg-8 mx-auto">
+                <h1 class="mb-4 text-center">Speech Diarization Demo</h1>
+                
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h2 class="h5 mb-0">Interactive Demo</h2>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-4">
+                            Record a conversation or upload an audio file with multiple speakers. 
+                            Our system will identify different speakers and separate their audio.
+                        </p>
+                        
+                        <ul class="nav nav-tabs" id="demoTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="record-tab" data-bs-toggle="tab" data-bs-target="#record" type="button" role="tab" aria-controls="record" aria-selected="true">
+                                    <i data-feather="mic"></i> Record Audio
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="upload-tab" data-bs-toggle="tab" data-bs-target="#upload" type="button" role="tab" aria-controls="upload" aria-selected="false">
+                                    <i data-feather="upload"></i> Upload Audio
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="react-tab" data-bs-toggle="tab" data-bs-target="#react" type="button" role="tab" aria-controls="react" aria-selected="false">
+                                    <i data-feather="code"></i> React Demo
+                                </button>
+                            </li>
+                        </ul>
+                        
+                        <div class="tab-content p-3" id="demoTabsContent">
+                            <!-- Record Audio Tab -->
+                            <div class="tab-pane fade show active" id="record" role="tabpanel" aria-labelledby="record-tab">
+                                <div class="d-flex flex-column align-items-center">
+                                    <div class="record-controls mt-4 mb-3 text-center">
+                                        <button id="recordButton" class="btn btn-primary btn-lg">
+                                            <i data-feather="mic"></i> Start Recording
+                                        </button>
+                                        <button id="stopButton" class="btn btn-danger btn-lg d-none">
+                                            <i data-feather="square"></i> Stop Recording
+                                        </button>
+                                        <span id="recordingTime" class="ms-3 h5 d-none">
+                                            <span class="recording-indicator">●</span> 00:00
+                                        </span>
+                                    </div>
+                                    
+                                    <div id="recordingStatus" class="status-message mt-2 mb-4"></div>
+                                    
+                                    <div id="audioPlayback" class="d-none w-100 mb-4">
+                                        <h5>Recorded Audio:</h5>
+                                        <audio id="recordedAudio" controls class="w-100"></audio>
+                                        <div class="d-flex justify-content-center mt-3">
+                                            <button id="processButton" class="btn btn-success">
+                                                <i data-feather="cpu"></i> Process Audio
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <div id="processingStatus" class="processing-status d-none">
+                                        <div class="spinner-border text-primary" role="status">
+                                            <span class="visually-hidden">Processing...</span>
+                                        </div>
+                                        <p class="mt-2">Processing audio... This may take a few moments.</p>
+                                    </div>
+                                    
+                                    <div id="diarizationResults" class="w-100"></div>
+                                </div>
+                            </div>
+                            
+                            <!-- Upload Audio Tab -->
+                            <div class="tab-pane fade" id="upload" role="tabpanel" aria-labelledby="upload-tab">
+                                <div class="d-flex flex-column align-items-center">
+                                    <div class="upload-controls mt-4 mb-3">
+                                        <div class="mb-3">
+                                            <label for="audioFile" class="form-label">Select an audio file (.wav, .mp3, .ogg)</label>
+                                            <input class="form-control" type="file" id="audioFile" accept=".wav,.mp3,.ogg,.flac,.webm">
+                                        </div>
+                                        <button id="uploadButton" class="btn btn-primary" disabled>
+                                            <i data-feather="upload"></i> Upload & Process
+                                        </button>
+                                    </div>
+                                    
+                                    <div id="uploadStatus" class="status-message mt-2 mb-4"></div>
+                                    
+                                    <div id="uploadProcessingStatus" class="processing-status d-none">
+                                        <div class="spinner-border text-primary" role="status">
+                                            <span class="visually-hidden">Processing...</span>
+                                        </div>
+                                        <p class="mt-2">Processing audio... This may take a few moments.</p>
+                                    </div>
+                                    
+                                    <div id="uploadResults" class="w-100"></div>
+                                </div>
+                            </div>
+                            
+                            <!-- React Component Demo Tab -->
+                            <div class="tab-pane fade" id="react" role="tabpanel" aria-labelledby="react-tab">
+                                <div class="my-4">
+                                    <p class="mb-3">
+                                        This is a demo of our React component which you can easily integrate into your own React applications.
+                                        Just include the component file and use it as shown below.
+                                    </p>
+                                    
+                                    <div id="react-diarizer-container" class="border p-4 rounded"></div>
+                                    
+                                    <div class="mt-4">
+                                        <h5>Usage Example:</h5>
+                                        <pre class="code-snippet bg-dark text-light p-3 rounded"><code>import { SpeechDiarizer } from 'speech-diarizer';
+
+function MyComponent() {
+  return (
+    &lt;SpeechDiarizer 
+      apiEndpoint="/api/webrtc"
+      maxDuration={60}
+      autoProcess={true}
+      onDiarized={(result) => console.log(result)}
+    /&gt;
+  );
+}</code></pre>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h2 class="h5 mb-0">How It Works</h2>
+                    </div>
+                    <div class="card-body">
+                        <p>This demo showcases our speech diarization algorithm in action:</p>
+                        <ol>
+                            <li><strong>Record or Upload Audio</strong> - Start by recording a conversation or uploading an audio file</li>
+                            <li><strong>Voice Activity Detection</strong> - Our system identifies segments with human speech</li>
+                            <li><strong>Feature Extraction</strong> - MFCC features are extracted from speech segments</li>
+                            <li><strong>Speaker Clustering</strong> - Speakers are identified using machine learning algorithms</li>
+                            <li><strong>Audio Separation</strong> - Individual audio streams are created for each speaker</li>
+                        </ol>
+                    </div>
+                </div>
+                
+                <div class="text-center mt-5">
+                    <h3>Ready to integrate this into your own application?</h3>
+                    <p class="lead">Check out our API documentation for detailed integration instructions.</p>
+                    <a href="/docs" class="btn btn-primary mt-2">View API Documentation</a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-light py-4 mt-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>Speech Diarization API</h5>
+                    <p>A Python-based speech diarization API that detects and separates speech from multiple speakers using MFCC features.</p>
+                </div>
+                <div class="col-md-3">
+                    <h5>Quick Links</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="/" class="text-light">Home</a></li>
+                        <li><a href="/demo" class="text-light">Demo</a></li>
+                        <li><a href="/docs" class="text-light">API Documentation</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-3">
+                    <h5>Resources</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="https://github.com" class="text-light">GitHub</a></li>
+                        <li><a href="https://librosa.org" class="text-light">Librosa</a></li>
+                        <li><a href="https://webrtc.org" class="text-light">WebRTC</a></li>
+                    </ul>
+                </div>
+            </div>
+            <hr>
+            <div class="text-center">
+                <p>&copy; 2023 Speech Diarization API. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize Feather icons
+            feather.replace();
+            
+            // Initialize audio recorder
+            const recorder = new AudioRecorder({
+                onRecordingStart: () => {
+                    document.getElementById('recordButton').classList.add('d-none');
+                    document.getElementById('stopButton').classList.remove('d-none');
+                    document.getElementById('recordingTime').classList.remove('d-none');
+                    document.getElementById('recordingStatus').innerHTML = 'Recording in progress...';
+                    document.getElementById('audioPlayback').classList.add('d-none');
+                    document.getElementById('diarizationResults').innerHTML = '';
+                },
+                onRecordingStop: (result) => {
+                    document.getElementById('recordButton').classList.remove('d-none');
+                    document.getElementById('stopButton').classList.add('d-none');
+                    document.getElementById('recordingTime').classList.add('d-none');
+                    document.getElementById('recordingStatus').innerHTML = 'Recording stopped. Ready to process.';
+                    
+                    // Display the recorded audio
+                    const audioPlayer = document.getElementById('recordedAudio');
+                    audioPlayer.src = result.url;
+                    document.getElementById('audioPlayback').classList.remove('d-none');
+                },
+                onRecordingProgress: (progress) => {
+                    const duration = progress.duration;
+                    const minutes = Math.floor(duration / 60000);
+                    const seconds = Math.floor((duration % 60000) / 1000);
+                    document.getElementById('recordingTime').innerHTML = 
+                        `<span class="recording-indicator">●</span> ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                },
+                onError: (error) => {
+                    console.error('Recorder error:', error);
+                    document.getElementById('recordingStatus').innerHTML = 
+                        `<div class="alert alert-danger">Error: ${error.message}</div>`;
+                    
+                    document.getElementById('recordButton').classList.remove('d-none');
+                    document.getElementById('stopButton').classList.add('d-none');
+                    document.getElementById('recordingTime').classList.add('d-none');
+                }
+            });
+            
+            // Initialize diarized audio player
+            const diarizedPlayer = new DiarizedAudioPlayer('diarizationResults');
+            
+            // Record button event
+            document.getElementById('recordButton').addEventListener('click', async () => {
+                const initialized = await recorder.initialize();
+                if (initialized) {
+                    recorder.startRecording();
+                }
+            });
+            
+            // Stop button event
+            document.getElementById('stopButton').addEventListener('click', () => {
+                recorder.stopRecording();
+            });
+            
+            // Process button event
+            document.getElementById('processButton').addEventListener('click', async () => {
+                document.getElementById('processingStatus').classList.remove('d-none');
+                document.getElementById('audioPlayback').classList.add('d-none');
+                
+                try {
+                    const result = await recorder.uploadWebRTC('/api/webrtc');
+                    document.getElementById('processingStatus').classList.add('d-none');
+                    
+                    if (result && result.success) {
+                        diarizedPlayer.displayResults(result);
+                    } else {
+                        document.getElementById('diarizationResults').innerHTML = 
+                            `<div class="alert alert-danger">Processing failed: ${result ? result.error : 'Unknown error'}</div>`;
+                    }
+                } catch (error) {
+                    document.getElementById('processingStatus').classList.add('d-none');
+                    document.getElementById('diarizationResults').innerHTML = 
+                        `<div class="alert alert-danger">Error: ${error.message}</div>`;
+                }
+            });
+            
+            // File input change event
+            document.getElementById('audioFile').addEventListener('change', (event) => {
+                const fileInput = event.target;
+                const uploadButton = document.getElementById('uploadButton');
+                
+                if (fileInput.files && fileInput.files.length > 0) {
+                    uploadButton.disabled = false;
+                } else {
+                    uploadButton.disabled = true;
+                }
+            });
+            
+            // Upload button event
+            document.getElementById('uploadButton').addEventListener('click', async () => {
+                const fileInput = document.getElementById('audioFile');
+                
+                if (!fileInput.files || fileInput.files.length === 0) {
+                    return;
+                }
+                
+                const file = fileInput.files[0];
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                document.getElementById('uploadStatus').innerHTML = '';
+                document.getElementById('uploadProcessingStatus').classList.remove('d-none');
+                document.getElementById('uploadResults').innerHTML = '';
+                
+                try {
+                    const response = await fetch('/api/upload', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    const result = await response.json();
+                    document.getElementById('uploadProcessingStatus').classList.add('d-none');
+                    
+                    if (result && result.success) {
+                        // Display results
+                        const resultsDiv = new DiarizedAudioPlayer('uploadResults');
+                        resultsDiv.displayResults(result);
+                    } else {
+                        document.getElementById('uploadResults').innerHTML = 
+                            `<div class="alert alert-danger">Processing failed: ${result ? result.error : 'Unknown error'}</div>`;
+                    }
+                } catch (error) {
+                    document.getElementById('uploadProcessingStatus').classList.add('d-none');
+                    document.getElementById('uploadResults').innerHTML = 
+                        `<div class="alert alert-danger">Error: ${error.message}</div>`;
+                }
+            });
+            
+            // Initialize React component demo
+            ReactDOM.render(
+                React.createElement(SpeechDiarizer, {
+                    apiEndpoint: '/api/webrtc',
+                    maxDuration: 60,
+                    autoProcess: true,
+                    onDiarized: function(result) { 
+                        console.log('Diarization complete:', result); 
+                    }
+                }),
+                document.getElementById('react-diarizer-container')
+            );
+        });
+    </script>
+</body>
+</html>

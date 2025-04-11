@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Documentation - Speech Diarization API</title>
+    <link rel="stylesheet" href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css">
+    <link rel="stylesheet" href="/static/css/custom.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/feather-icons/4.28.0/feather.min.js"></script>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i data-feather="mic"></i> Speech Diarizer
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/demo">Demo</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/docs">API Docs</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="https://github.com" target="_blank">GitHub</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="container py-5">
+        <div class="row">
+            <div class="col-lg-3">
+                <!-- Sidebar / Table of Contents -->
+                <div class="sticky-top pt-3">
+                    <div class="list-group">
+                        <a href="#overview" class="list-group-item list-group-item-action">Overview</a>
+                        <a href="#installation" class="list-group-item list-group-item-action">Installation</a>
+                        <a href="#api-endpoints" class="list-group-item list-group-item-action">API Endpoints</a>
+                        <a href="#react-integration" class="list-group-item list-group-item-action">React Integration</a>
+                        <a href="#flask-integration" class="list-group-item list-group-item-action">Flask Integration</a>
+                        <a href="#configuration" class="list-group-item list-group-item-action">Configuration</a>
+                        <a href="#examples" class="list-group-item list-group-item-action">Examples</a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-9">
+                <h1 class="mb-4">API Documentation</h1>
+                
+                <section id="overview" class="mb-5">
+                    <h2>Overview</h2>
+                    <p>
+                        The Speech Diarization API provides functionality to detect and separate speech from multiple speakers
+                        in audio recordings. It uses MFCC (Mel-frequency cepstral coefficients) features for speaker identification
+                        and can be easily integrated into both React and Flask applications.
+                    </p>
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Key Features</h5>
+                            <ul>
+                                <li>Audio recording and streaming</li>
+                                <li>Voice activity detection to identify speech segments</li>
+                                <li>Speaker separation using MFCC features</li>
+                                <li>Support for up to 2 speakers (optimized case)</li>
+                                <li>REST API for easy integration</li>
+                                <li>ReactJS component for frontend integration</li>
+                                <li>Flask blueprint for backend integration</li>
+                            </ul>
+                        </div>
+                    </div>
+                </section>
+                
+                <section id="installation" class="mb-5">
+                    <h2>Installation</h2>
+                    <p>
+                        To use the Speech Diarization API, you need to install the required Python packages:
+                    </p>
+                    <pre class="bg-dark text-light p-3 rounded"><code>pip install numpy librosa webrtcvad scikit-learn flask</code></pre>
+                    
+                    <h3 class="mt-4">Additional Requirements</h3>
+                    <ul>
+                        <li><strong>Python 3.7+</strong> - The API is built with Python 3.7 or higher</li>
+                        <li><strong>FFmpeg</strong> - Required for audio processing (install via your package manager)</li>
+                    </ul>
+                    
+                    <div class="alert alert-info mt-3">
+                        <i data-feather="info" class="me-2"></i>
+                        For optimal performance, we recommend using a virtual environment for your Python installation.
+                    </div>
+                </section>
+                
+                <section id="api-endpoints" class="mb-5">
+                    <h2>API Endpoints</h2>
+                    <p>
+                        The Speech Diarization API provides the following REST endpoints:
+                    </p>
+                    
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h3 class="h5 mb-0">POST /api/upload</h3>
+                        </div>
+                        <div class="card-body">
+                            <p>Upload an audio file for diarization processing.</p>
+                            
+                            <h5>Request</h5>
+                            <ul>
+                                <li><strong>Method:</strong> POST</li>
+                                <li><strong>Content-Type:</strong> multipart/form-data</li>
+                                <li><strong>Body:</strong> Form field 'file' containing audio file (.wav, .mp3, .ogg, .flac, .webm)</li>
+                            </ul>
+                            
+                            <h5>Response</h5>
+                            <pre class="bg-dark text-light p-3 rounded"><code>{
+  "success": true,
+  "session_id": "550e8400-e29b-41d4-a716-446655440000",
+  "num_speakers": 2,
+  "speakers": {
+    "speaker_0": {
+      "file_path": "/path/to/temp/file.wav",
+      "segments": [
+        {"start": 0.5, "end": 2.3, "duration": 1.8},
+        {"start": 5.1, "end": 8.7, "duration": 3.6}
+      ],
+      "total_duration": 5.4
+    },
+    "speaker_1": {
+      "file_path": "/path/to/temp/file.wav",
+      "segments": [
+        {"start": 2.8, "end": 4.6, "duration": 1.8},
+        {"start": 9.2, "end": 12.5, "duration": 3.3}
+      ],
+      "total_duration": 5.1
+    }
+  }
+}</code></pre>
+                        </div>
+                    </div>
+                    
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h3 class="h5 mb-0">POST /api/stream</h3>
+                        </div>
+                        <div class="card-body">
+                            <p>Process streaming audio data for diarization.</p>
+                            
+                            <h5>Request</h5>
+                            <ul>
+                                <li><strong>Method:</strong> POST</li>
+                                <li><strong>Content-Type:</strong> application/octet-stream</li>
+                                <li><strong>Body:</strong> Raw audio data (WAV format)</li>
+                            </ul>
+                            
+                            <h5>Response</h5>
+                            <p>Same as /api/upload response</p>
+                        </div>
+                    </div>
+                    
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h3 class="h5 mb-0">POST /api/webrtc</h3>
+                        </div>
+                        <div class="card-body">
+                            <p>Process WebRTC audio recording for diarization.</p>
+                            
+                            <h5>Request</h5>
+                            <ul>
+                                <li><strong>Method:</strong> POST</li>
+                                <li><strong>Content-Type:</strong> multipart/form-data</li>
+                                <li><strong>Body:</strong> Form field 'audio' containing WebRTC audio blob</li>
+                            </ul>
+                            
+                            <h5>Response</h5>
+                            <p>Same as /api/upload response</p>
+                        </div>
+                    </div>
+                    
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h3 class="h5 mb-0">GET /api/segments/:session_id/:speaker_id</h3>
+                        </div>
+                        <div class="card-body">
+                            <p>Retrieve audio segment for a specific speaker from a diarization session.</p>
+                            
+                            <h5>Request</h5>
+                            <ul>
+                                <li><strong>Method:</strong> GET</li>
+                                <li><strong>URL Parameters:</strong>
+                                    <ul>
+                                        <li>session_id: Diarization session ID</li>
+                                        <li>speaker_id: Speaker ID (e.g., "speaker_0")</li>
+                                    </ul>
+                                </li>
+                            </ul>
+                            
+                            <h5>Response</h5>
+                            <ul>
+                                <li><strong>Content-Type:</strong> audio/wav</li>
+                                <li><strong>Body:</strong> WAV audio file containing speech segments for the specified speaker</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h3 class="h5 mb-0">GET /api/info/:session_id</h3>
+                        </div>
+                        <div class="card-body">
+                            <p>Get information about a diarization session.</p>
+                            
+                            <h5>Request</h5>
+                            <ul>
+                                <li><strong>Method:</strong> GET</li>
+                                <li><strong>URL Parameters:</strong>
+                                    <ul>
+                                        <li>session_id: Diarization session ID</li>
+                                    </ul>
+                                </li>
+                            </ul>
+                            
+                            <h5>Response</h5>
+                            <pre class="bg-dark text-light p-3 rounded"><code>{
+  "session_id": "550e8400-e29b-41d4-a716-446655440000",
+  "num_speakers": 2,
+  "speakers": {
+    "speaker_0": {
+      "url": "/api/segments/550e8400-e29b-41d4-a716-446655440000/speaker_0"
+    },
+    "speaker_1": {
+      "url": "/api/segments/550e8400-e29b-41d4-a716-446655440000/speaker_1"
+    }
+  }
+}</code></pre>
+                        </div>
+                    </div>
+                </section>
+                
+                <section id="react-integration" class="mb-5">
+                    <h2>React Integration</h2>
+                    <p>
+                        The Speech Diarization API comes with a React component for easy integration into React applications.
+                    </p>
+                    
+                    <h3>Using the React Component</h3>
+                    <p>Include the React component in your application and use it as follows:</p>
+                    
+                    <pre class="bg-dark text-light p-3 rounded"><code>import React from 'react';
+import { SpeechDiarizer } from 'speech-diarizer';
+
+function MyApp() {
+  const handleDiarized = (result, speakers) => {
+    console.log('Diarization complete:', result);
+    console.log('Speakers:', speakers);
+  };
+
+  return (
+    <div className="app">
+      <h1>My Diarization App</h1>
+      
+      <SpeechDiarizer 
+        apiEndpoint="/api/webrtc"
+        maxDuration={60}
+        autoProcess={true}
+        showControls={true}
+        onDiarized={handleDiarized}
+        onError={(error) => console.error(error)}
+      />
+    </div>
+  );
+}</code></pre>
+                    
+                    <h3 class="mt-4">Component Props</h3>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Prop</th>
+                                    <th>Type</th>
+                                    <th>Default</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>apiEndpoint</td>
+                                    <td>string</td>
+                                    <td>/api/webrtc</td>
+                                    <td>API endpoint for processing audio</td>
+                                </tr>
+                                <tr>
+                                    <td>maxDuration</td>
+                                    <td>number</td>
+                                    <td>300</td>
+                                    <td>Maximum recording duration in seconds</td>
+                                </tr>
+                                <tr>
+                                    <td>autoProcess</td>
+                                    <td>boolean</td>
+                                    <td>true</td>
+                                    <td>Automatically process audio after recording stops</td>
+                                </tr>
+                                <tr>
+                                    <td>showControls</td>
+                                    <td>boolean</td>
+                                    <td>true</td>
+                                    <td>Show recording controls in the component</td>
+                                </tr>
+                                <tr>
+                                    <td>onRecordingStart</td>
+                                    <td>function</td>
+                                    <td>null</td>
+                                    <td>Callback when recording starts</td>
+                                </tr>
+                                <tr>
+                                    <td>onRecordingStop</td>
+                                    <td>function</td>
+                                    <td>null</td>
+                                    <td>Callback when recording stops</td>
+                                </tr>
+                                <tr>
+                                    <td>onRecordingProgress</td>
+                                    <td>function</td>
+                                    <td>null</td>
+                                    <td>Callback during recording with progress info</td>
+                                </tr>
+                                <tr>
+                                    <td>onDiarized</td>
+                                    <td>function</td>
+                                    <td>null</td>
+                                    <td>Callback when diarization is complete</td>
+                                </tr>
+                                <tr>
+                                    <td>onError</td>
+                                    <td>function</td>
+                                    <td>null</td>
+                                    <td>Callback when an error occurs</td>
+                                </tr>
+                                <tr>
+                                    <td>onReset</td>
+                                    <td>function</td>
+                                    <td>null</td>
+                                    <td>Callback when component is reset</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+                
+                <section id="flask-integration" class="mb-5">
+                    <h2>Flask Integration</h2>
+                    <p>
+                        The Speech Diarization API can be easily integrated into existing Flask applications
+                        using the provided Blueprint.
+                    </p>
+                    
+                    <h3>Integrating with Flask</h3>
+                    <p>Add the diarization blueprint to your Flask application:</p>
+                    
+                    <pre class="bg-dark text-light p-3 rounded"><code>from flask import Flask
+from api.routes import api_bp
+
+app = Flask(__name__)
+
+# Register the diarization blueprint
+app.register_blueprint(api_bp, url_prefix='/api')
+
+@app.route('/')
+def index():
+    return 'My Application with Speech Diarization'
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000)</code></pre>
+                    
+                    <h3 class="mt-4">Using the Diarizer Directly</h3>
+                    <p>You can also use the Diarizer class directly in your Flask routes:</p>
+                    
+                    <pre class="bg-dark text-light p-3 rounded"><code>from flask import Flask, request, jsonify
+from diarizer import Diarizer
+
+app = Flask(__name__)
+diarizer = Diarizer()
+
+@app.route('/process_audio', methods=['POST'])
+def process_audio():
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file part'}), 400
+        
+    file = request.files['file']
+    
+    # Save file temporarily
+    file_path = '/tmp/audio.wav'
+    file.save(file_path)
+    
+    # Process with diarizer
+    result = diarizer.process_audio_file(file_path)
+    
+    return jsonify(result)</code></pre>
+                </section>
+                
+                <section id="configuration" class="mb-5">
+                    <h2>Configuration</h2>
+                    <p>
+                        The Speech Diarization API can be configured to optimize performance for different use cases.
+                    </p>
+                    
+                    <h3>Diarizer Configuration</h3>
+                    <p>When initializing the Diarizer class, you can customize the following parameters:</p>
+                    
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Default</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>sample_rate</td>
+                                    <td>16000</td>
+                                    <td>Audio sample rate in Hz</td>
+                                </tr>
+                                <tr>
+                                    <td>frame_duration_ms</td>
+                                    <td>30</td>
+                                    <td>Frame duration in milliseconds</td>
+                                </tr>
+                                <tr>
+                                    <td>vad_aggressiveness</td>
+                                    <td>3</td>
+                                    <td>VAD aggressiveness (0-3, where 3 is most aggressive)</td>
+                                </tr>
+                                <tr>
+                                    <td>min_speech_duration_ms</td>
+                                    <td>300</td>
+                                    <td>Minimum speech duration to consider in milliseconds</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <h3 class="mt-4">Example Configuration</h3>
+                    <pre class="bg-dark text-light p-3 rounded"><code>from diarizer import Diarizer
+
+# Configure for short speech segments and more sensitive speech detection
+custom_diarizer = Diarizer(
+    sample_rate=16000,
+    frame_duration_ms=20,
+    vad_aggressiveness=2,
+    min_speech_duration_ms=200
+)</code></pre>
+                </section>
+                
+                <section id="examples" class="mb-5">
+                    <h2>Examples</h2>
+                    
+                    <h3>Python Example - Processing an Audio File</h3>
+                    <pre class="bg-dark text-light p-3 rounded"><code>from diarizer import Diarizer
+
+# Initialize diarizer
+diarizer = Diarizer()
+
+# Process an audio file
+result = diarizer.process_audio_file('conversation.wav')
+
+# Print results
+print(f"Found {result['num_speakers']} speakers")
+for speaker_id, speaker_data in result['speakers'].items():
+    print(f"{speaker_id}: {speaker_data['total_duration']:.1f} seconds of speech")
+    print(f"Audio file: {speaker_data['file_path']}")
+    
+    # Print segments
+    for segment in speaker_data['segments']:
+        print(f"  {segment['start']:.1f}s - {segment['end']:.1f}s ({segment['duration']:.1f}s)")</code></pre>
+                    
+                    <h3 class="mt-4">JavaScript Example - Recording and Processing</h3>
+                    <pre class="bg-dark text-light p-3 rounded"><code>// Initialize recorder
+const recorder = new AudioRecorder({
+    onRecordingStop: async (result) => {
+        // Display recorded audio
+        const audioPlayer = document.getElementById('audioPlayer');
+        audioPlayer.src = result.url;
+        
+        // Process the recording
+        try {
+            const response = await fetch('/api/webrtc', {
+                method: 'POST',
+                body: result.blob
+            });
+            
+            const diarizationResult = await response.json();
+            
+            if (diarizationResult.success) {
+                // Handle successful diarization
+                const numSpeakers = diarizationResult.num_speakers;
+                console.log(`Found ${numSpeakers} speakers`);
+                
+                // Create audio elements for each speaker
+                Object.keys(diarizationResult.speakers).forEach(speakerId => {
+                    const audioUrl = `/api/segments/${diarizationResult.session_id}/${speakerId}`;
+                    
+                    const speakerDiv = document.createElement('div');
+                    speakerDiv.innerHTML = `
+                        <h4>${speakerId}</h4>
+                        <audio controls src="${audioUrl}"></audio>
+                    `;
+                    
+                    document.getElementById('results').appendChild(speakerDiv);
+                });
+            } else {
+                console.error('Diarization failed:', diarizationResult.error);
+            }
+        } catch (error) {
+            console.error('Error processing audio:', error);
+        }
+    }
+});
+
+// Start recording
+document.getElementById('recordButton').addEventListener('click', async () => {
+    await recorder.initialize();
+    recorder.startRecording();
+});</code></pre>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-light py-4">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>Speech Diarization API</h5>
+                    <p>A Python-based speech diarization API that detects and separates speech from multiple speakers using MFCC features.</p>
+                </div>
+                <div class="col-md-3">
+                    <h5>Quick Links</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="/" class="text-light">Home</a></li>
+                        <li><a href="/demo" class="text-light">Demo</a></li>
+                        <li><a href="/docs" class="text-light">API Documentation</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-3">
+                    <h5>Resources</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="https://github.com" class="text-light">GitHub</a></li>
+                        <li><a href="https://librosa.org" class="text-light">Librosa</a></li>
+                        <li><a href="https://webrtc.org" class="text-light">WebRTC</a></li>
+                    </ul>
+                </div>
+            </div>
+            <hr>
+            <div class="text-center">
+                <p>&copy; 2023 Speech Diarization API. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Initialize Feather icons
+        document.addEventListener('DOMContentLoaded', function() {
+            feather.replace();
+            
+            // Handle smooth scrolling for anchor links
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    
+                    const targetId = this.getAttribute('href');
+                    const targetElement = document.querySelector(targetId);
+                    
+                    if (targetElement) {
+                        window.scrollTo({
+                            top: targetElement.offsetTop - 70,
+                            behavior: 'smooth'
+                        });
+                        
+                        // Update active state in sidebar
+                        document.querySelectorAll('.list-group-item').forEach(item => {
+                            item.classList.remove('active');
+                        });
+                        this.classList.add('active');
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

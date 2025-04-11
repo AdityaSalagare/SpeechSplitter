@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speech Diarization API</title>
+    <link rel="stylesheet" href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css">
+    <link rel="stylesheet" href="/static/css/custom.css">
+    <script src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/feather-icons/4.28.0/feather.min.js"></script>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i data-feather="mic"></i> Speech Diarizer
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/demo">Demo</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/docs">API Docs</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="https://github.com" target="_blank">GitHub</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <header class="bg-primary text-white text-center py-5">
+        <div class="container">
+            <h1>Speech Diarization API</h1>
+            <p class="lead">Detect and separate speech from multiple speakers using MFCC features</p>
+            <div class="d-flex justify-content-center gap-3 mt-4">
+                <a href="/demo" class="btn btn-light btn-lg">Try Demo</a>
+                <a href="/docs" class="btn btn-outline-light btn-lg">View API Docs</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container py-5">
+        <div class="row">
+            <div class="col-lg-8 mx-auto">
+                <section class="mb-5">
+                    <h2>What is Speech Diarization?</h2>
+                    <p>
+                        Speech diarization is the process of partitioning an audio stream into segments according to speaker identity. 
+                        In simpler terms, it answers the question: "Who spoke when?" This technology is essential for transcribing 
+                        meetings, interviews, and conversations where multiple speakers are involved.
+                    </p>
+                    <div class="text-center my-4">
+                        <div class="diarization-diagram">
+                            <div class="audio-wave">
+                                <svg viewBox="0 0 100 20" preserveAspectRatio="none">
+                                    <path d="M0,10 Q10,5 20,10 T40,10 T60,10 T80,10 T100,10" stroke="var(--bs-info)" stroke-width="1" fill="none" />
+                                    <path d="M0,10 Q5,7 10,10 T20,10 T30,10 T40,10 T50,10 T60,10 T70,10 T80,10 T90,10 T100,10" stroke="var(--bs-info)" stroke-width="0.5" fill="none" />
+                                </svg>
+                            </div>
+                            <div class="speaker-segments">
+                                <div class="segment speaker-1">Speaker 1</div>
+                                <div class="segment speaker-2">Speaker 2</div>
+                                <div class="segment speaker-1">Speaker 1</div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="mb-5">
+                    <h2>Key Features</h2>
+                    <div class="row g-4 py-3">
+                        <div class="col-md-6">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <div class="feature-icon mb-3">
+                                        <i data-feather="mic"></i>
+                                    </div>
+                                    <h3 class="card-title h5">Voice Activity Detection</h3>
+                                    <p class="card-text">Automatically identifies when someone is speaking and filters out silence and noise.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <div class="feature-icon mb-3">
+                                        <i data-feather="users"></i>
+                                    </div>
+                                    <h3 class="card-title h5">Speaker Separation</h3>
+                                    <p class="card-text">Distinguishes between different speakers using MFCC (Mel-frequency cepstral coefficients) features.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <div class="feature-icon mb-3">
+                                        <i data-feather="code"></i>
+                                    </div>
+                                    <h3 class="card-title h5">Easy Integration</h3>
+                                    <p class="card-text">Simple API endpoints for both React and Flask applications. Drop-in components available.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <div class="feature-icon mb-3">
+                                        <i data-feather="download"></i>
+                                    </div>
+                                    <h3 class="card-title h5">Audio Export</h3>
+                                    <p class="card-text">Download separate audio files for each speaker identified in the conversation.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="mb-5">
+                    <h2>How It Works</h2>
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <ol class="list-group list-group-flush list-group-numbered">
+                                <li class="list-group-item">Audio is recorded or uploaded to the system</li>
+                                <li class="list-group-item">Voice Activity Detection (VAD) identifies speech segments</li>
+                                <li class="list-group-item">MFCC features are extracted from speech segments</li>
+                                <li class="list-group-item">Clustering algorithms separate speakers based on voice characteristics</li>
+                                <li class="list-group-item">Individual audio segments are created for each speaker</li>
+                            </ol>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="mb-5">
+                    <h2>Quick Integration Guide</h2>
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    <h3 class="h5 mb-0">React</h3>
+                                </div>
+                                <div class="card-body">
+                                    <p>Add the Speech Diarizer component to your React app:</p>
+                                    <pre class="code-snippet bg-dark text-light p-3 rounded"><code>import { SpeechDiarizer } from 'speech-diarizer';
+
+function MyComponent() {
+  return (
+    &lt;SpeechDiarizer 
+      apiEndpoint="/api/webrtc"
+      onDiarized={(result) => console.log(result)}
+    /&gt;
+  );
+}</code></pre>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    <h3 class="h5 mb-0">Flask</h3>
+                                </div>
+                                <div class="card-body">
+                                    <p>Add the diarization blueprint to your Flask app:</p>
+                                    <pre class="code-snippet bg-dark text-light p-3 rounded"><code>from flask import Flask
+from api.routes import api_bp
+
+app = Flask(__name__)
+app.register_blueprint(api_bp, url_prefix='/api')
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000)</code></pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="text-center">
+                    <h2>Try It Now</h2>
+                    <p class="lead">Experience the power of our speech diarization API</p>
+                    <a href="/demo" class="btn btn-primary btn-lg mt-3">Go to Demo</a>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-light py-4">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>Speech Diarization API</h5>
+                    <p>A Python-based speech diarization API that detects and separates speech from multiple speakers using MFCC features.</p>
+                </div>
+                <div class="col-md-3">
+                    <h5>Quick Links</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="/" class="text-light">Home</a></li>
+                        <li><a href="/demo" class="text-light">Demo</a></li>
+                        <li><a href="/docs" class="text-light">API Documentation</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-3">
+                    <h5>Resources</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="https://github.com" class="text-light">GitHub</a></li>
+                        <li><a href="https://librosa.org" class="text-light">Librosa</a></li>
+                        <li><a href="https://webrtc.org" class="text-light">WebRTC</a></li>
+                    </ul>
+                </div>
+            </div>
+            <hr>
+            <div class="text-center">
+                <p>&copy; 2023 Speech Diarization API. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Initialize Feather icons
+        document.addEventListener('DOMContentLoaded', function() {
+            feather.replace();
+        });
+    </script>
+</body>
+</html>

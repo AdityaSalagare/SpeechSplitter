@@ -1,274 +1,196 @@
 import os
-import logging
-import uuid
+import tempfile
 import json
-from flask import Blueprint, request, jsonify, send_file, current_app
+import logging
+from flask import Blueprint, request, jsonify, send_file, render_template, Response
 from werkzeug.utils import secure_filename
-import threading
+import uuid
+from diarizer import Diarizer
 
-# Import core modules
-from diarization_core.audio_recorder import AudioRecorder
-from diarization_core.voice_detector import VoiceDetector
-from diarization_core.feature_extractor import FeatureExtractor
-from diarization_core.speaker_diarization import SpeakerDiarization
-from diarization_core.segmenter import AudioSegmenter
-from utils.audio_utils import validate_audio_file, get_file_extension
+# Create Blueprint
+api_bp = Blueprint('api', __name__)
 
+# Set up logging
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-# Create blueprint
-diarization_blueprint = Blueprint('diarization', __name__)
+# Initialize diarizer
+diarizer = Diarizer()
 
-# Initialize directories
-UPLOAD_FOLDER = 'uploads'
-TEMP_FOLDER = 'temp'
-OUTPUT_FOLDER = 'output'
+# Helper functions
+def allowed_file(filename):
+    """Check if file has an allowed extension"""
+    ALLOWED_EXTENSIONS = {'wav', 'mp3', 'ogg', 'flac', 'webm'}
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-for folder in [UPLOAD_FOLDER, TEMP_FOLDER, OUTPUT_FOLDER]:
-    if not os.path.exists(folder):
-        os.makedirs(folder)
-
-# In-memory storage for processing jobs
-processing_jobs = {}
-
-@diarization_blueprint.route('/health', methods=['GET'])
-def health_check():
-    """Health check endpoint."""
-    return jsonify({'status': 'ok', 'message': 'Speech diarization API is running'})
-
-@diarization_blueprint.route('/upload', methods=['POST'])
-def upload_audio():
+@api_bp.route('/upload', methods=['POST'])
+def upload_file():
     """
-    Upload an audio file for diarization.
+    API endpoint to upload an audio file for diarization
+    
+    Returns:
+        JSON response with diarization results
     """
+    # Check if file is present in request
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file part in the request'}), 400
+    
+    file = request.files['file']
+    
+    # Check if file is empty
+    if file.filename == '':
+        return jsonify({'error': 'No file selected'}), 400
+    
+    # Check if file has allowed extension
+    if not allowed_file(file.filename):
+        return jsonify({'error': 'File type not allowed'}), 400
+    
     try:
-        # Check if a file was included in the request
-        if 'file' not in request.files:
-            return jsonify({'error': 'No file part in the request'}), 400
-        
-        file = request.files['file']
-        
-        # Check if a file was selected
-        if file.filename == '':
-            return jsonify({'error': 'No file selected'}), 400
-        
-        # Validate the file type
-        if not validate_audio_file(file.filename):
-            return jsonify({'error': 'Invalid audio file type'}), 400
-        
-        # Create a secure filename
-        filename = secure_filename(file.filename)
-        extension = get_file_extension(filename)
-        
-        # Generate a unique ID for this job
-        job_id = str(uuid.uuid4())
-        
-        # Save the file to the upload folder
-        file_path = os.path.join(UPLOAD_FOLDER, f"{job_id}{extension}")
+        # Save file to temporary location
+        temp_dir = tempfile.mkdtemp()
+        file_path = os.path.join(temp_dir, secure_filename(file.filename))
         file.save(file_path)
         
-        # Store job information
-        processing_jobs[job_id] = {
-            'status': 'uploaded',
-            'file_path': file_path,
-            'original_filename': filename
-        }
+        # Process audio file
+        result = diarizer.process_audio_file(file_path)
         
-        # Start processing in a background thread
-        threading.Thread(
-            target=process_audio_file,
-            args=(job_id, file_path)
-        ).start()
+        # Clean up
+        os.remove(file_path)
+        os.rmdir(temp_dir)
         
-        return jsonify({
-            'job_id': job_id,
-            'status': 'uploaded',
-            'message': 'File uploaded successfully, processing started'
-        })
-        
+        return jsonify(result)
+    
     except Exception as e:
-        logger.error(f"Error uploading audio: {str(e)}")
+        logger.error(f"Error processing uploaded file: {e}")
         return jsonify({'error': str(e)}), 500
 
-@diarization_blueprint.route('/record', methods=['POST'])
-def record_audio():
+@api_bp.route('/stream', methods=['POST'])
+def process_stream():
     """
-    Record audio for diarization.
+    API endpoint to process streamed audio data
+    
+    Returns:
+        JSON response with diarization results
     """
     try:
-        # Get recording duration from the request
-        data = request.get_json()
-        duration = data.get('duration', 10)  # Default to 10 seconds
+        # Get audio data from request
+        audio_data = request.data
         
-        # Generate a unique ID for this job
-        job_id = str(uuid.uuid4())
+        if not audio_data:
+            return jsonify({'error': 'No audio data received'}), 400
         
-        # Initialize recorder
-        recorder = AudioRecorder(temp_dir=TEMP_FOLDER)
+        # Process audio data
+        result = diarizer.process_audio_bytes(audio_data)
         
-        # Record audio
-        file_path = recorder.record(duration=duration)
-        
-        # Store job information
-        processing_jobs[job_id] = {
-            'status': 'recorded',
-            'file_path': file_path,
-            'original_filename': os.path.basename(file_path)
-        }
-        
-        # Start processing in a background thread
-        threading.Thread(
-            target=process_audio_file,
-            args=(job_id, file_path)
-        ).start()
-        
-        return jsonify({
-            'job_id': job_id,
-            'status': 'recorded',
-            'message': f'Audio recorded for {duration} seconds, processing started'
-        })
-        
+        return jsonify(result)
+    
     except Exception as e:
-        logger.error(f"Error recording audio: {str(e)}")
+        logger.error(f"Error processing audio stream: {e}")
         return jsonify({'error': str(e)}), 500
 
-def process_audio_file(job_id, file_path):
+@api_bp.route('/segments/<session_id>/<speaker_id>', methods=['GET'])
+def get_speaker_segment(session_id, speaker_id):
     """
-    Process an audio file for diarization.
+    API endpoint to get audio segments for a specific speaker
     
     Args:
-        job_id (str): Job ID
-        file_path (str): Path to the audio file
+        session_id: Diarization session ID
+        speaker_id: Speaker ID
+        
+    Returns:
+        Audio file for the speaker
     """
     try:
-        # Update job status
-        processing_jobs[job_id]['status'] = 'processing'
+        # Construct file path
+        temp_dir = os.path.join(diarizer.temp_dir, session_id)
+        file_path = os.path.join(temp_dir, f"{speaker_id}.wav")
         
-        # Initialize components
-        recorder = AudioRecorder(temp_dir=TEMP_FOLDER)
-        voice_detector = VoiceDetector()
-        feature_extractor = FeatureExtractor()
-        diarizer = SpeakerDiarization(num_speakers=2)
-        segmenter = AudioSegmenter(output_dir=OUTPUT_FOLDER)
-        
-        # Load audio file
-        audio_data, sample_rate = recorder.load_audio_from_file(file_path)
-        
-        # Detect voice segments
-        voice_segments = voice_detector.detect_voice_segments(audio_data, sample_rate)
-        
-        # Extract features from segments
-        feature_segments = feature_extractor.extract_features_from_segments(audio_data, voice_segments, sample_rate)
-        
-        # Skip diarization if no segments found
-        if not feature_segments:
-            processing_jobs[job_id]['status'] = 'completed'
-            processing_jobs[job_id]['result'] = {
-                'error': 'No voice segments detected in the audio'
-            }
-            return
-        
-        # Perform diarization
-        diarized_segments = diarizer.diarize(feature_segments)
-        
-        # Merge consecutive segments from the same speaker
-        merged_segments = diarizer.merge_consecutive_segments(diarized_segments)
-        
-        # Segment the audio
-        speaker_segments = segmenter.segment_audio(file_path, merged_segments)
-        
-        # Create combined files for each speaker
-        combined_files = {}
-        for speaker_id in speaker_segments:
-            combined_file = segmenter.combine_speaker_segments(speaker_segments, speaker_id)
-            if combined_file:
-                combined_files[speaker_id] = combined_file
-        
-        # Store results
-        processing_jobs[job_id]['status'] = 'completed'
-        processing_jobs[job_id]['result'] = {
-            'num_segments': len(merged_segments),
-            'speaker_segments': {
-                speaker_id: [
-                    {
-                        'file': os.path.basename(segment['file']),
-                        'start_time': segment['start_time'],
-                        'end_time': segment['end_time'],
-                        'duration': segment['duration'],
-                    }
-                    for segment in segments
-                ]
-                for speaker_id, segments in speaker_segments.items()
-            },
-            'combined_files': {
-                speaker_id: os.path.basename(file_path)
-                for speaker_id, file_path in combined_files.items()
-            }
-        }
-        
-    except Exception as e:
-        logger.error(f"Error processing audio: {str(e)}")
-        processing_jobs[job_id]['status'] = 'error'
-        processing_jobs[job_id]['error'] = str(e)
-
-@diarization_blueprint.route('/jobs/<job_id>', methods=['GET'])
-def get_job_status(job_id):
-    """
-    Get the status of a diarization job.
-    """
-    try:
-        if job_id not in processing_jobs:
-            return jsonify({'error': 'Job not found'}), 404
-        
-        job = processing_jobs[job_id]
-        
-        response = {
-            'job_id': job_id,
-            'status': job['status'],
-            'original_filename': job['original_filename']
-        }
-        
-        # Include results if processing is complete
-        if job['status'] == 'completed' and 'result' in job:
-            response['result'] = job['result']
-        
-        # Include error if there was one
-        if job['status'] == 'error' and 'error' in job:
-            response['error'] = job['error']
-        
-        return jsonify(response)
-        
-    except Exception as e:
-        logger.error(f"Error getting job status: {str(e)}")
-        return jsonify({'error': str(e)}), 500
-
-@diarization_blueprint.route('/download/<file_type>/<filename>', methods=['GET'])
-def download_file(file_type, filename):
-    """
-    Download a processed audio file.
-    """
-    try:
-        if file_type == 'segment':
-            file_path = os.path.join(OUTPUT_FOLDER, secure_filename(filename))
-        else:
-            return jsonify({'error': 'Invalid file type'}), 400
-        
+        # Check if file exists
         if not os.path.exists(file_path):
-            return jsonify({'error': 'File not found'}), 404
+            return jsonify({'error': 'Speaker segment not found'}), 404
         
-        return send_file(file_path, as_attachment=True)
-        
+        # Return audio file
+        return send_file(file_path, mimetype='audio/wav')
+    
     except Exception as e:
-        logger.error(f"Error downloading file: {str(e)}")
+        logger.error(f"Error retrieving speaker segment: {e}")
         return jsonify({'error': str(e)}), 500
 
-@diarization_blueprint.route('/stream', methods=['POST'])
-def start_streaming():
+@api_bp.route('/info/<session_id>', methods=['GET'])
+def get_session_info(session_id):
     """
-    Start streaming audio for real-time diarization.
-    This is a placeholder for WebSocket-based streaming functionality.
+    API endpoint to get information about a diarization session
+    
+    Args:
+        session_id: Diarization session ID
+        
+    Returns:
+        JSON with session information
     """
-    return jsonify({
-        'error': 'Streaming API not yet implemented',
-        'message': 'For real-time diarization, please use the WebSocket endpoint /ws/stream'
-    }), 501
+    try:
+        # Construct directory path
+        temp_dir = os.path.join(diarizer.temp_dir, session_id)
+        
+        # Check if directory exists
+        if not os.path.exists(temp_dir):
+            return jsonify({'error': 'Session not found'}), 404
+        
+        # Get list of speaker files
+        speaker_files = [f for f in os.listdir(temp_dir) if f.endswith('.wav')]
+        
+        # Create response with speaker info
+        speakers = {}
+        for speaker_file in speaker_files:
+            speaker_id = os.path.splitext(speaker_file)[0]
+            speakers[speaker_id] = {
+                'url': f'/api/segments/{session_id}/{speaker_id}'
+            }
+        
+        return jsonify({
+            'session_id': session_id,
+            'num_speakers': len(speaker_files),
+            'speakers': speakers
+        })
+    
+    except Exception as e:
+        logger.error(f"Error retrieving session info: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@api_bp.route('/api/webrtc', methods=['POST'])
+def process_webrtc():
+    """
+    API endpoint to process audio from WebRTC
+    
+    Returns:
+        JSON response with diarization results
+    """
+    try:
+        # Get audio data from request
+        if 'audio' not in request.files:
+            return jsonify({'error': 'No audio data received'}), 400
+        
+        audio_file = request.files['audio']
+        
+        # Save file to temporary location
+        temp_dir = tempfile.mkdtemp()
+        file_path = os.path.join(temp_dir, f"{uuid.uuid4()}.wav")
+        audio_file.save(file_path)
+        
+        # Process audio file
+        result = diarizer.process_audio_file(file_path)
+        
+        # Clean up
+        os.remove(file_path)
+        os.rmdir(temp_dir)
+        
+        return jsonify(result)
+    
+    except Exception as e:
+        logger.error(f"Error processing WebRTC audio: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@api_bp.route('/health', methods=['GET'])
+def health_check():
+    """Health check endpoint"""
+    return jsonify({'status': 'ok'})
