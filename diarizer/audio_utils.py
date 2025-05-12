@@ -4,7 +4,10 @@ import wave
 import numpy as np
 import webrtcvad
 import logging
-
+import librosa
+import soundfile as sf
+import tempfile
+import os
 logger = logging.getLogger(__name__)
 
 def read_wave(path):
@@ -133,10 +136,6 @@ def convert_sample_rate(audio_path, target_sample_rate=16000):
     Returns:
         Path to the converted audio file
     """
-    import librosa
-    import soundfile as sf
-    import tempfile
-    import os
     
     # Load the audio file
     y, sr = librosa.load(audio_path, sr=target_sample_rate)
